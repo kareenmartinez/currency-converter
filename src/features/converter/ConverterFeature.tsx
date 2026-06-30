@@ -6,7 +6,7 @@ import { InlineError } from "@/components/errors/InlineError";
 import { StatusMessage } from "@/components/loading/StatusMessage";
 import { SwapButton } from "@/components/SwapButton";
 import type { ConversionResult } from "@/utils/convert";
-import { formatDate } from "@/utils/format";
+import { formatLastUpdated } from "@/utils/format";
 
 type Props = {
   result: ConversionResult | null;
@@ -133,15 +133,7 @@ export function ConverterFeature({
                 <p className="rates-footer">
                   <span className="underline underline-offset-2">{result.fromName}</span> to{" "}
                   <span className="underline underline-offset-2">{result.toName}</span>{" "}
-                  conversion — Last updated{" "}
-                  {formatDate(result.lastUpdated, {
-                    month: "long",
-                    day: "numeric",
-                    year: "numeric",
-                    hour: "numeric",
-                    minute: "2-digit",
-                    timeZoneName: "short",
-                  })}
+                  conversion — Last updated {formatLastUpdated(result.lastUpdated)}
                 </p>
               )}
             </>

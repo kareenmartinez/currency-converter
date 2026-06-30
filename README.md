@@ -44,6 +44,8 @@ The app expects two endpoints relative to that base URL:
 - `GET /currencies`
 - `GET /rates?base={currencyCode}`
 
+The `/rates` response includes `"date": "2026-06-25"` — a date only, no time. The app splits that string and shows **June 25, 2026** in the footer (`formatLastUpdated` in `src/utils/format.ts`).
+
 ### Scripts
 
 | Command | Description |
@@ -119,6 +121,8 @@ ConverterFeature (renders)
 **`ConverterFeature`** is presentational: hero title, form fields, rates section (loading spinner, error with retry, or conversion result).
 
 **`buildConversionResult`** (in `utils/convert.ts`) takes raw inputs and returns one object ready for display — so the UI does not repeat business rules.
+
+**`formatLastUpdated`** (in `utils/format.ts`) turns the rates date (`"2026-06-25"`) into `"June 25, 2026"`.
 
 
 ---

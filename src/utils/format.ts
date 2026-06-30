@@ -16,17 +16,21 @@ export function formatNumber(
   return new Intl.NumberFormat(locale, intlOptions).format(value);
 }
 
-export function formatDate(
-  value: string | Date,
-  options: Intl.DateTimeFormatOptions & { locale?: string } = {}
-): string {
-  const date = typeof value === "string" ? new Date(value) : value;
+// API sends "2026-06-25" (date only). Split and format as "June 25, 2026".
+export function formatLastUpdated(value: string): string {
+  const [year, month, day] = value.split("-");
+
+  if (!year || !month || !day) return invalid;
+
+  const date = new Date(Number(year), Number(month) - 1, Number(day));
 
   if (Number.isNaN(date.getTime())) return invalid;
 
-  const { locale = "en-US", ...intlOptions } = options;
-
-  return new Intl.DateTimeFormat(locale, intlOptions).format(date);
+  return date.toLocaleDateString("en-US", {
+    month: "long",
+    day: "numeric",
+    year: "numeric",
+  });
 }
 
 export function parseNumber(value: string): number {
