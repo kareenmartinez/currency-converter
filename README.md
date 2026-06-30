@@ -130,10 +130,6 @@ The currency picker is a native `<select>` (`SelectField`), styled with Tailwind
 
 `useConverter` keeps `amountDraft` (what the user typed) separate from `amount` (parsed via `parseNumber`). The input is `type="text"` with `inputMode="decimal"` because `type="number"` clears in-progress values like `"1."`, which breaks decimal entry. Invalid characters are rejected with a simple pattern before updating state.
 
-### Same-currency guard
-
-If the user picks the same currency on both sides, `useConverter` auto-swaps the other side to the first available option — avoids a dead-end pair without extra UI.
-
 ### Tailwind CSS v4
 
 Utility-first styling to move fast on layout and responsiveness. Repeated patterns (`.field-control`, `.rate-line`, `.hero-title`) live in `index.css` so JSX stays readable.
@@ -154,7 +150,7 @@ These are conscious gaps, not oversights.
 
 **Default currencies** — `fromCurrency` / `toCurrency` default to `"USD"` / `"EUR"` without checking the API response. In production I'd align with backend/product: either the API returns a sorted list with sensible defaults (or a dedicated "popular pairs" field), or the client treats `"USD"` / `"EUR"` as preferences and falls back when the list loads if they're missing. Depends on who owns that contract and how stable the currency set is.
 
-**Tests** — not in this repo yet. `conversion.ts`, `format.ts`, and `hasAmount` are pure and easy to unit-test; `useConverter` has real logic (amount validation, same-currency swap). I'd add Vitest + Testing Library for the main flow.
+**Tests** — not in this repo yet. `conversion.ts`, `format.ts`, and `hasAmount` are pure and easy to unit-test; `useConverter` has real logic (amount validation). I'd add Vitest + Testing Library for the main flow.
 
 **Persistence** — state resets on reload. Storing amount + pair in `localStorage` would be a small, useful addition.
 
