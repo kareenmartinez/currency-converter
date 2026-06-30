@@ -1,7 +1,7 @@
 import type {
   CurrenciesResponse,
   ExchangeRatesResponse,
-} from "@/services/converter";
+} from "@/features/converter/types";
 import { exchangeRateFormat, formatNumber } from "@/utils/format";
 
 export type ConversionResult = {

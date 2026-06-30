@@ -1,18 +1,8 @@
 import { httpClient } from "@/config/httpClient";
-
-type Currency = {
-  name: string;
-  symbol: string;
-  currency_symbol: string;
-};
-
-type CurrenciesResponse = Record<string, Currency>;
-
-type ExchangeRatesResponse = {
-  date: string;
-  base: string;
-  rates: Record<string, number>;
-};
+import type {
+  CurrenciesResponse,
+  ExchangeRatesResponse,
+} from "@/features/converter/types";
 
 const fetchCurrencies = async (): Promise<CurrenciesResponse> => {
   const { data } = await httpClient.get<CurrenciesResponse>("/currencies");
@@ -32,5 +22,4 @@ const fetchExchangeRates = async (
   return data;
 };
 
-export type { CurrenciesResponse, Currency, ExchangeRatesResponse };
 export { fetchCurrencies, fetchExchangeRates };

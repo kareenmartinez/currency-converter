@@ -1,7 +1,7 @@
 import { useCallback, useMemo, useState } from "react";
 
 import type { SelectOption } from "@/components/SelectField";
-import type { CurrenciesResponse } from "@/services/converter";
+import type { CurrenciesResponse } from "@/features/converter/types";
 import { parseNumber } from "@/utils/format";
 
 const AMOUNT_DRAFT_PATTERN = /^\d*\.?\d*$/;
