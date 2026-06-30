@@ -3,9 +3,9 @@ import { useMemo, type ReactNode } from "react";
 import { PageError } from "@/components/errors/PageError";
 import { StatusMessage } from "@/components/loading/StatusMessage";
 import { ConverterFeature } from "@/features/converter/ConverterFeature";
-import { useConverter } from "@/hooks/useConverter";
-import { useCurrencies } from "@/hooks/useCurrencies";
-import { useRates } from "@/hooks/useRates";
+import { useConverter } from "@/features/converter/hooks/useConverter";
+import { useCurrencies } from "@/features/converter/hooks/useCurrencies";
+import { useRates } from "@/features/converter/hooks/useRates";
 import { buildConversionResult } from "@/utils/convert";
 
 export function ConverterPage() {
