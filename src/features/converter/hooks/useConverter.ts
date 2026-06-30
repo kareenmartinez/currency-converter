@@ -46,6 +46,16 @@ export function useConverter(currencies: CurrenciesResponse | undefined) {
     [currencies, fromCurrency]
   );
 
+  const fromName = useMemo(
+    () => currencies?.[fromCurrency]?.name ?? fromCurrency,
+    [currencies, fromCurrency]
+  );
+
+  const toName = useMemo(
+    () => currencies?.[toCurrency]?.name ?? toCurrency,
+    [currencies, toCurrency]
+  );
+
   const pickOtherCurrency = useCallback(
     (code: string) =>
       currencyOptions.find((option) => option.value !== code)?.value,
@@ -92,6 +102,8 @@ export function useConverter(currencies: CurrenciesResponse | undefined) {
     fromCurrency,
     toCurrency,
     fromSymbol,
+    fromName,
+    toName,
     fromOptions,
     toOptions,
     onAmountChange,

@@ -1,59 +1,39 @@
 # Currency Converter
 
-A single-screen currency converter built with React and TypeScript. It fetches currencies and exchange rates from an API, lets the user pick an amount and a currency pair, and displays the converted result with loading and error states.
+Single-screen currency converter built with React and TypeScript. Fetches currencies and exchange rates from an API, lets the user pick an amount and a currency pair, and shows the converted result with loading and error states.
 
 ---
 
-## A note on scope (and why it looks like a bigger app)
+## A note on scope
 
-This is intentionally a **one-page app**. I know that for something this small you could use fewer libraries, less configuration, and a flatter folder structure — and that would be perfectly valid.
+This is a **one-page app**. If I were shipping something this small to production, I'd probably use fewer layers and a flatter structure — and that would be fine for the actual scope.
 
-I still chose this setup because, in my day-to-day work, I usually build **larger applications**. I wanted to share how I think, how I like to structure code, and how I would approach a feature even when the UI is small. Some layers here are a bit more ceremony than strictly necessary for a single screen; that is a conscious trade-off, not an oversight.
+I structured it this way because **I usually work on larger applications**. For this challenge I wanted to share **how I think and organize code** when a project needs to grow — not to argue that this stack is the best choice for a single screen. Some of the structure here is more ceremony than this UI strictly needs; that's intentional.
 
-In a bigger codebase I would lean more heavily into **feature-based modules** (each feature owning its UI, hooks, and types). Here the split is lighter — mostly one feature folder — but the **ideas** (page vs feature, hooks vs utils, services vs UI) are the same ones I use on larger projects.
-
-I would also add **automated testing** (unit tests for `utils/`, hook tests with React Query test utils, and a few integration tests for the main flow). That is not implemented yet in this repo, but it is part of how I would harden this in a real team environment.
+The main idea is **feature ownership**: the converter owns its UI, hooks, types, and domain logic. A page only renders `<ConverterFeature />` — no wiring, no props.
 
 ---
 
 ## Getting started
 
-### Prerequisites
-
-- Node.js 20+
-- npm
-
-### Setup
+**Prerequisites:** Node.js 20+, npm
 
 ```bash
-# Install dependencies
 npm install
-
-# Copy environment file and set the API base URL
-cp .env.example .env
+cp .env.example .env   # set VITE_API_URL
 ```
 
-Edit `.env`:
-
-```env
-VITE_API_URL=https://your-api-base-url
-```
-
-The app expects two endpoints relative to that base URL:
+Endpoints (relative to `VITE_API_URL`):
 
 - `GET /currencies`
 - `GET /rates?base={currencyCode}`
 
-The `/rates` response includes `"date": "2026-06-25"` — a date only, no time. The app splits that string and shows **June 25, 2026** in the footer (`formatLastUpdated` in `src/utils/format.ts`).
-
-### Scripts
-
-| Command | Description |
-|---|---|
-| `npm run dev` | Start the dev server (Vite) |
-| `npm run build` | Type-check and production build |
-| `npm run preview` | Serve the production build locally |
-| `npm run lint` | Run ESLint |
+| Command           | Description                        |
+| ----------------- | ---------------------------------- |
+| `npm run dev`     | Dev server (Vite)                  |
+| `npm run build`   | Type-check + production build      |
+| `npm run preview` | Preview production build           |
+| `npm run lint`    | ESLint                             |
 
 CI (`.github/workflows/ci.yml`) runs `lint` and `build` on push/PR.
 
@@ -63,155 +43,140 @@ CI (`.github/workflows/ci.yml`) runs `lint` and `build` on push/PR.
 
 ### Folder structure
 
-```text
+```
 src/
-├── main.tsx                 # App bootstrap (providers, router)
-├── routes/                  # React Router config
+├── main.tsx                          # Providers, router, error boundary
+├── routes/                           # React Router config
 ├── pages/
-│   └── ConverterPage.tsx    # Orchestration: data, loading, layout
+│   └── ConverterPage.tsx             # Layout shell → <ConverterFeature />
 ├── features/converter/
-│   └── ConverterFeature.tsx # Presentational UI for the converter
-├── hooks/
-│   ├── useCurrencies.ts     # Fetch + expose currency list state
-│   ├── useRates.ts          # Fetch + expose rates state for a base currency
-│   └── useConverter.ts      # Form state (amount, from, to, options)
-├── services/
-│   └── converter.ts         # HTTP calls (axios)
-├── utils/
-│   ├── convert.ts           # Pure conversion logic (buildConversionResult)
-│   └── format.ts            # Number/date parsing and formatting
-├── components/              # Shared, generic UI (inputs, errors, loading)
-└── config/                  # env, axios client, React Query client
-└── assets/icons/          # SVG icon components
+│   ├── ConverterFeature.tsx          # Container / public entry
+│   ├── conversion.ts                 # Pure conversion logic
+│   ├── types.ts                      # Domain types, RatesState, hasAmount
+│   ├── hooks/
+│   │   ├── useConverterController.ts # Orchestrates hooks + builds RatesState
+│   │   ├── useConverter.ts           # Form state (amount, currencies, options)
+│   │   ├── useCurrencies.ts          # Server state: currency list
+│   │   └── useRates.ts               # Server state: rates for base currency
+│   └── components/
+│       ├── ConverterView.tsx         # Presentational: form + rates section
+│       └── ConversionResultView.tsx  # Presentational: conversion result block
+├── services/converter.ts             # HTTP calls (axios)
+├── components/                       # Shared UI (inputs, select, errors, loading)
+├── config/                           # env, http client, React Query client
+└── utils/format.ts                   # Number/date formatting, parsing
 ```
 
-### How responsibility is split
+**Rule:** anything that knows what a *currency* or a *rate* is lives in `features/converter/`. Generic UI and helpers live in `components/` and `utils/`. Features depend on shared code, never the other way around.
+
+### Layers
 
 | Layer | Role |
-|---|---|
-| **Page** | Wires hooks together, handles page-level loading/errors, owns the purple/white layout shell, passes props to the feature |
-| **Feature** | Renders the converter UI (hero, form, rates block). No direct API calls |
-| **Hooks** | Server state (`useCurrencies`, `useRates`) and client form state (`useConverter`) |
-| **Services** | Thin HTTP layer — knows endpoints, not React |
-| **Utils** | Pure functions — conversion math, formatting, no side effects |
-| **Components** | Reusable UI primitives used across the app |
+| ----- | ---- |
+| **Page** | Layout shell only. Renders `<ConverterFeature />`. |
+| **Feature (container)** | Calls the controller; handles currencies loading/error/ready. |
+| **Controller** | Wires hooks + `buildConversionResult`; exposes `status`, `form`, `rates`. |
+| **View** | Presentational — props only, no fetching. |
+| **Hooks** | Server state (`useCurrencies`, `useRates`) and form state (`useConverter`). |
+| **Services** | Thin HTTP layer — endpoints, not React. |
+| **Domain** | `conversion.ts` and `types.ts` — pure logic and types. |
 
 ### Data flow
 
-```text
-API
-  ↓
-services/converter.ts
-  ↓
-useCurrencies / useRates / useConverter
-  ↓
-ConverterPage (combines everything, buildConversionResult)
-  ↓
-ConverterFeature (renders)
+```
+API → services/converter.ts → useCurrencies / useRates / useConverter
+  → useConverterController → ConverterFeature → ConverterView → ConversionResultView
 ```
 
-**`ConverterPage`** is the container:
+`useConverterController` is where everything meets: it loads currencies, runs form state, fetches rates for the selected "from" currency, builds the conversion result, and returns one grouped object so the view doesn't juggle raw flags.
 
-1. Loads currencies → shows loading/error or continues
-2. Runs form state via `useConverter(currencies)`
-3. Loads rates for the selected “from” currency via `useRates`
-4. Builds `result` with `buildConversionResult` (amount × rate, labels, inverse rate text)
-5. Passes everything to **`ConverterFeature`**
+### State modeling
 
-**`ConverterFeature`** is presentational: hero title, form fields, rates section (loading spinner, error with retry, or conversion result).
+The rates section has four states (`idle`, `loading`, `error`, `ready`), each with different data. Instead of a status string plus a nullable result, the controller builds a discriminated union:
 
-**`buildConversionResult`** (in `utils/convert.ts`) takes raw inputs and returns one object ready for display — so the UI does not repeat business rules.
+```ts
+type RatesState =
+  | { status: "idle" }
+  | { status: "loading" }
+  | { status: "error"; onRetry: () => void; isRetrying: boolean }
+  | { status: "ready"; result: ConversionWithAmount };
+```
 
-**`formatLastUpdated`** (in `utils/format.ts`) turns the rates date (`"2026-06-25"`) into `"June 25, 2026"`.
-
+`result` only exists on `ready`. A `hasAmount` type guard narrows in the controller so the view's `switch` stays exhaustive (an unhandled state fails the build via `never`).
 
 ---
 
 ## Tech stack and decisions
 
-### Vite
+### Vite + TypeScript
 
-I chose **Vite** as the build tool because it gives fast dev feedback (ESM + HMR), a simple config for a SPA, and a straightforward production build. For a project this size, Create React App would be heavier than needed; Vite stays minimal while still supporting TypeScript, path aliases (`@/`), and the Tailwind plugin out of the box.
-
-**Trade-off:** Vite is excellent for SPAs; if this grew into a multi-app monorepo or needed SSR, I would reconsider (e.g. Next.js, etc).
-
-### TypeScript
-
-Strict typing for API responses, hook return shapes, and conversion results. Catches mistakes at build time and documents contracts between layers.
-
-
-### React Router DOM
-
-The app has **one route** (`/`). Router is not strictly required here.
-
-I still included it because:
-
-- It matches how I structure apps that will grow (layout route, error boundaries per route, lazy-loaded pages)
-- `AppLayout` wraps the page with a shared header
-- Route-level `errorElement` handles unexpected render errors
-
-**Trade-off:** Extra dependency and a few files for a single screen.
+Vite for fast dev feedback and a minimal SPA setup. TypeScript strict mode for API shapes, hook returns, and conversion results — and to **design** with types (the `RatesState` union is an example: illegal states shouldn't compile).
 
 ### TanStack React Query
 
-Honestly, for **two GET requests** you could use `useEffect` and `useState` and call it a day. I still went with React Query.
+Two GET requests could live in `useEffect` + `useState`. I used React Query because loading, error, retry, and cache are already part of the UI, and it's what I reach for on real API-driven apps.
 
-Why: this app fetches currencies once and rates every time you change the "from" currency — loading, error, retry, and cache are already part of the UI. React Query gives me that without writing it by hand in each hook. The defaults live in `config/queryClient.ts`, and `useCurrencies` / `useRates` stay small.
-
-It's more than this screen strictly needs. I picked it because it's what I use when an app talks to an API for real, and I wanted this challenge to reflect that. If the project grew — more endpoints, refetch on focus, shared data between pages — I wouldn't have to swap tools.
+`useRates` uses `keepPreviousData` and checks `query.data?.base === baseCurrency` before exposing rates, so the UI doesn't flash stale data from the previous currency while a new request is in flight.
 
 ### Axios
 
-Same idea: **`fetch` would work here.** There are only two endpoints.
+`fetch` would work. Axios gives a shared client in `config/httpClient.ts` (base URL from env, normalized error messages, cancellation passthrough). Calls live in `services/converter.ts` — one place to add auth or interceptors later.
 
-I used axios because I set up a shared client in `config/httpClient.ts` (base URL from env, one place for all requests). The actual calls sit in `services/converter.ts`. That's the pattern I follow on bigger projects — when you later need auth headers, interceptors, or consistent error handling, you change one file, not every request.
+### Native `<select>` for currencies
 
-For this challenge it's a bit of upfront structure. I accepted that on purpose, as part of the "base that could scale" I mentioned above.
+The currency picker is a native `<select>` (`SelectField`), styled with Tailwind and progressive `appearance: base-select` rules in `index.css` where the browser supports them. For ~30 options without search, native is accessible by default and keeps the implementation small.
+
+### Amount input
+
+`useConverter` keeps `amountDraft` (what the user typed) separate from `amount` (parsed via `parseNumber`). The input is `type="text"` with `inputMode="decimal"` because `type="number"` clears in-progress values like `"1."`, which breaks decimal entry. Invalid characters are rejected with a simple pattern before updating state.
+
+### Same-currency guard
+
+If the user picks the same currency on both sides, `useConverter` auto-swaps the other side to the first available option — avoids a dead-end pair without extra UI.
 
 ### Tailwind CSS v4
 
-You could style this with plain CSS or CSS modules — one screen, not a lot of components. I still used **Tailwind**.
-
-Why: it's what I'm fastest with day to day. I didn't want the challenge to be about writing custom CSS files; I wanted to focus on layout, responsiveness, and structure. Shared values (brand color, spacing, breakpoints) live in `index.css`, and I added a few semantic classes (`.hero-title`, `.rates-section`) where the same styles repeat.
-
-The markup can look busy with utility classes — that's the trade-off. For me it's worth it: quick iterations, easy `max-md:` tweaks for mobile, and no pile of separate stylesheets for a small app.
+Utility-first styling to move fast on layout and responsiveness. Repeated patterns (`.field-control`, `.rate-line`, `.hero-title`) live in `index.css` so JSX stays readable.
 
 ### react-error-boundary
 
-This one is tiny. There's already error handling for the API (loading states, retry buttons, React Router `errorElement`). **react-error-boundary** is for something different: when React itself crashes while rendering — a bug in a component, not a failed fetch.
+API errors are handled with loading states, inline errors, and retry buttons. The error boundary (in `main.tsx`) covers a different case: an uncaught render crash, so the user sees a message instead of a blank screen.
 
-Wrapping the app in `main.tsx` means the user sees an error message instead of a blank screen. Strictly optional for a challenge this size. I added it because I usually put it at the root of real projects — it's a small habit, not a big dependency.
+### React Router
 
-
----
-
-
-## What I would do differently at scale
-
-| This project | Larger product |
-|---|---|
-| One feature folder | Multiple features under `features/`, each with components, hooks, types |
-| Page orchestrates one feature | Pages compose several features or use route loaders |
-| Props passed into `ConverterFeature` | Possibly colocated feature hooks, or grouped props (`form`, `rates`) |
-| No tests yet | Vitest + Testing Library for utils, hooks, and critical UI flows |
-| Inline React Query keys | Centralized query keys if many queries and invalidation rules |
+Router is wired even for a single page — same bootstrap pattern I'd use when routes grow. `ConverterPage` stays a thin layout shell.
 
 ---
 
-## How to read the code (suggested order)
+## What I'd revisit in production
 
-1. `src/main.tsx` — providers and router entry
-2. `src/pages/ConverterPage.tsx` — where data comes together
-3. `src/hooks/useCurrencies.ts`, `useRates.ts`, `useConverter.ts` — state and fetching
-4. `src/utils/convert.ts` — conversion result builder
-5. `src/features/converter/ConverterFeature.tsx` — UI
+These are conscious gaps, not oversights.
+
+**Default currencies** — `fromCurrency` / `toCurrency` default to `"USD"` / `"EUR"` without checking the API response. In production I'd align with backend/product: either the API returns a sorted list with sensible defaults (or a dedicated "popular pairs" field), or the client treats `"USD"` / `"EUR"` as preferences and falls back when the list loads if they're missing. Depends on who owns that contract and how stable the currency set is.
+
+**Tests** — not in this repo yet. `conversion.ts`, `format.ts`, and `hasAmount` are pure and easy to unit-test; `useConverter` has real logic (amount validation, same-currency swap). I'd add Vitest + Testing Library for the main flow.
+
+**Persistence** — state resets on reload. Storing amount + pair in `localStorage` would be a small, useful addition.
+
+**Design questions** — hero title copy (codes + names), whether the inverse rate line matches expectations, and `last updated`: the API returns a date only (`"2026-06-25"`), so showing a time would be misleading without a backend timestamp.
+
+**At scale** — more folders under `features/`, the same discriminated-union pattern for currencies status, centralized React Query keys.
 
 ---
 
-## Environment variables
+## Where to start reading
 
-| Variable | Required | Description |
-|---|---|---|
-| `VITE_API_URL` | Yes | Base URL for the currency API |
+1. `src/features/converter/ConverterFeature.tsx`
+2. `src/features/converter/hooks/useConverterController.ts`
+3. `src/features/converter/types.ts`
+4. `src/features/converter/components/ConverterView.tsx`
+
+---
+
+## Environment
+
+| Variable       | Required | Description            |
+| -------------- | -------- | ---------------------- |
+| `VITE_API_URL` | Yes      | Currency API base URL  |
 
 See `.env.example`.

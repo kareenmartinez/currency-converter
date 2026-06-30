@@ -1,19 +1,9 @@
 import type {
   CurrenciesResponse,
+  ConversionResult,
   ExchangeRatesResponse,
-} from "@/features/converter/types";
+} from "./types";
 import { exchangeRateFormat, formatNumber } from "@/utils/format";
-
-export type ConversionResult = {
-  fromAmount: number;
-  fromCurrency: string;
-  fromName: string;
-  toAmount: number | null;
-  toCurrency: string;
-  toName: string;
-  inverseRateLabel: string | null;
-  lastUpdated?: string;
-};
 
 export function buildConversionResult(
   amount: number,
