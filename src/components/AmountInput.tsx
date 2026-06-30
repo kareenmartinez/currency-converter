@@ -1,7 +1,7 @@
 type Props = {
   id: string;
   label: string;
-  value: number;
+  value: string;
   prefix?: string;
   onChange: (value: string) => void;
 };
@@ -28,11 +28,9 @@ export function AmountInput({
 
         <input
           id={id}
-          type="number"
+          type="text"
           inputMode="decimal"
-          step="any"
-          min="0"
-          value={Number.isFinite(value) ? value : 0}
+          value={value}
           onChange={(event) => onChange(event.target.value)}
           className="min-w-0 flex-1 cursor-pointer border-0 py-3.5 pl-2 pr-4 outline-none"
         />

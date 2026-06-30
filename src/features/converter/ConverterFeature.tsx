@@ -10,7 +10,7 @@ import { formatLastUpdated } from "@/utils/format";
 
 type Props = {
   result: ConversionResult | null;
-  amount: number;
+  amountDraft: string;
   fromCurrency: string;
   toCurrency: string;
   fromSymbol: string;
@@ -28,7 +28,7 @@ type Props = {
 
 export function ConverterFeature({
   result,
-  amount,
+  amountDraft,
   fromCurrency,
   toCurrency,
   fromSymbol,
@@ -60,7 +60,7 @@ export function ConverterFeature({
           <AmountInput
             id="amount"
             label="Amount"
-            value={amount}
+            value={amountDraft}
             prefix={fromSymbol}
             onChange={onAmountChange}
           />

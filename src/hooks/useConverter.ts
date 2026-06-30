@@ -4,8 +4,11 @@ import type { SelectOption } from "@/components/SelectField";
 import type { CurrenciesResponse } from "@/services/converter";
 import { parseNumber } from "@/utils/format";
 
+const AMOUNT_DRAFT_PATTERN = /^\d*\.?\d*$/;
+
 export function useConverter(currencies: CurrenciesResponse | undefined) {
-  const [amount, setAmount] = useState(1);
+  const [amountDraft, setAmountDraft] = useState("1");
+  const amount = parseNumber(amountDraft);
   const [fromCurrency, setFromCurrencyState] = useState("USD");
   const [toCurrency, setToCurrencyState] = useState("EUR");
 
@@ -49,10 +52,10 @@ export function useConverter(currencies: CurrenciesResponse | undefined) {
     [currencyOptions]
   );
 
-  const onAmountChange = useCallback(
-    (value: string) => setAmount(parseNumber(value)),
-    []
-  );
+  const onAmountChange = useCallback((value: string) => {
+    if (value !== "" && !AMOUNT_DRAFT_PATTERN.test(value)) return;
+    setAmountDraft(value);
+  }, []);
 
   const setFromCurrency = useCallback(
     (code: string) => {
@@ -85,6 +88,7 @@ export function useConverter(currencies: CurrenciesResponse | undefined) {
 
   return {
     amount,
+    amountDraft,
     fromCurrency,
     toCurrency,
     fromSymbol,

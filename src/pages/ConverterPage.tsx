@@ -19,6 +19,7 @@ export function ConverterPage() {
 
   const {
     amount,
+    amountDraft,
     fromCurrency,
     toCurrency,
     fromSymbol,
@@ -83,7 +84,7 @@ export function ConverterPage() {
   return shell(
     <ConverterFeature
       result={result}
-      amount={amount}
+      amountDraft={amountDraft}
       fromCurrency={fromCurrency}
       toCurrency={toCurrency}
       fromSymbol={fromSymbol}
