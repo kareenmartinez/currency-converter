@@ -1,0 +1,99 @@
+@import "tailwindcss";
+
+@theme {
+  --color-brand: #653aff;
+  --color-brand-soft: #653aff1a;
+  --color-info: #e6e6ff;
+  --color-header: #0d1b3e;
+
+  --header-height: 3.5rem;
+  --content-height: calc(100svh - var(--header-height));
+  --content-half: calc(var(--content-height) / 2);
+  --card-lift: calc(var(--content-half) / 2);
+  --page-gutter: 1.5rem;
+}
+
+@layer base {
+  body {
+    @apply overflow-x-hidden bg-white font-sans text-base text-gray-900 antialiased;
+  }
+
+  input[type="number"] {
+    appearance: textfield;
+  }
+
+  input[type="number"]::-webkit-inner-spin-button,
+  input[type="number"]::-webkit-outer-spin-button {
+    appearance: none;
+  }
+}
+
+@layer components {
+  .field-label {
+    @apply mb-2 block text-sm font-semibold text-gray-900;
+  }
+
+  .field-control {
+    @apply min-w-0 rounded-lg border border-gray-300 bg-white text-base text-gray-900 transition-colors hover:border-brand hover:bg-brand-soft;
+  }
+
+  .field-control-focus {
+    @apply focus:border-brand focus:ring-1 focus:ring-brand;
+  }
+
+  .field-control-focus-within {
+    @apply focus-within:border-brand focus-within:ring-1 focus-within:ring-brand;
+  }
+
+  .amount-field {
+    @apply flex max-w-full overflow-x-auto;
+  }
+
+  .select-trigger {
+    @apply w-full cursor-pointer py-3.5 pl-4 pr-10 text-left outline-none;
+  }
+
+  .select-option {
+    @apply w-full cursor-pointer px-4 py-2.5 text-left text-base text-gray-900 hover:bg-brand-soft;
+  }
+
+  .select-option[data-selected] {
+    @apply bg-brand-soft font-semibold hover:bg-brand-soft;
+  }
+
+  .select-option[data-disabled] {
+    @apply cursor-not-allowed text-gray-400 hover:bg-transparent;
+  }
+
+  .btn-primary {
+    @apply inline-flex cursor-pointer items-center gap-2 rounded-lg bg-brand px-5 py-2.5 text-sm font-semibold text-white transition-opacity hover:opacity-90 disabled:cursor-not-allowed disabled:opacity-60;
+  }
+
+  .hero-title {
+    @apply max-w-full px-2 text-center text-2xl font-bold leading-snug text-white max-md:text-xl;
+  }
+
+  .rate-line {
+    @apply flex max-w-full flex-wrap items-baseline gap-x-2 text-xl font-semibold text-gray-900 max-md:text-lg;
+  }
+
+  .rates-section {
+    @apply mt-10 min-h-48 lg:min-h-50;
+  }
+
+  .rates-layout {
+    @apply flex min-w-0 flex-row items-start gap-16 max-md:flex-col max-md:gap-10;
+  }
+
+  .rates-footer {
+    @apply mt-10 min-w-0 text-right text-xs leading-relaxed text-gray-900 max-md:text-left;
+  }
+
+  .formatted-number {
+    @apply inline-block max-w-full tabular-nums;
+  }
+
+  .formatted-number-truncated {
+    @apply cursor-help underline decoration-dotted decoration-current underline-offset-4;
+  }
+}
