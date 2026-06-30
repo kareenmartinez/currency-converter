@@ -52,15 +52,14 @@ src/
 ├── features/converter/
 │   ├── ConverterFeature.tsx          # Container / public entry
 │   ├── conversion.ts                 # Pure conversion logic
-│   ├── types.ts                      # Domain types, RatesState, hasAmount
+│   ├── types.ts                      # Domain types, ConverterForm, hasAmount
 │   ├── hooks/
-│   │   ├── useConverterController.ts # Orchestrates hooks + builds RatesState
-│   │   ├── useConverter.ts           # Form state (amount, currencies, options)
-│   │   ├── useCurrencies.ts          # Server state: currency list
-│   │   └── useRates.ts               # Server state: rates for base currency
+│   │   ├── useConverter.ts           # Form state (amount, from/to, options)
+│   │   ├── useCurrencies.ts          # React Query: currency list
+│   │   └── useRates.ts               # React Query: rates for base currency
 │   └── components/
-│       ├── ConverterView.tsx         # Presentational: form + rates section
-│       └── ConversionResultView.tsx  # Presentational: conversion result block
+│       ├── ConverterView.tsx         # Form UI; calls controller when currencies are ready
+│       └── ConversionResultView.tsx  # Rates block: RQ flags + conversion result
 ├── services/converter.ts             # HTTP calls (axios)
 ├── components/                       # Shared UI (inputs, select, errors, loading)
 ├── config/                           # env, http client, React Query client
@@ -74,9 +73,9 @@ src/
 | Layer | Role |
 | ----- | ---- |
 | **Page** | Layout shell only. Renders `<ConverterFeature />`. |
-| **Feature (container)** | Calls the controller; handles currencies loading/error/ready. |
-| **Controller** | Wires hooks + `buildConversionResult`; exposes `status`, `form`, `rates`. |
-| **View** | Presentational — props only, no fetching. |
+| **Feature (container)** | `useCurrencies` (React Query) — gates loading / error / success. |
+| **View** | Receives `currencyList` (API data); calls `useConverter` and renders the form. |
+| **ConversionResultView** | `useRates` — loading / error / conversion result. |
 | **Hooks** | Server state (`useCurrencies`, `useRates`) and form state (`useConverter`). |
 | **Services** | Thin HTTP layer — endpoints, not React. |
 | **Domain** | `conversion.ts` and `types.ts` — pure logic and types. |
@@ -84,25 +83,15 @@ src/
 ### Data flow
 
 ```
-API → services/converter.ts → useCurrencies / useRates / useConverter
-  → useConverterController → ConverterFeature → ConverterView → ConversionResultView
+API → services/converter.ts → useCurrencies → ConverterFeature
+  → ConverterView → useConverter + ConversionResultView (useRates)
 ```
 
-`useConverterController` is where everything meets: it loads currencies, runs form state, fetches rates for the selected "from" currency, builds the conversion result, and returns one grouped object so the view doesn't juggle raw flags.
+### State and async UI
 
-### State modeling
+Both server fetches use **React Query** thin wrappers (`useCurrencies`, `useRates`). Keep the query result as a named object — `currencies.isPending`, `rates.data` — instead of destructuring flags. Pass resolved data to children with a distinct prop name (e.g. `currencyList={currencies.data}`).
 
-The rates section has four states (`idle`, `loading`, `error`, `ready`), each with different data. Instead of a status string plus a nullable result, the controller builds a discriminated union:
-
-```ts
-type RatesState =
-  | { status: "idle" }
-  | { status: "loading" }
-  | { status: "error"; onRetry: () => void; isRetrying: boolean }
-  | { status: "ready"; result: ConversionWithAmount };
-```
-
-`result` only exists on `ready`. A `hasAmount` type guard narrows in the controller so the view's `switch` stays exhaustive (an unhandled state fails the build via `never`).
+Form state follows the same idea: `useConverter(...).form`.
 
 ---
 
@@ -110,13 +99,13 @@ type RatesState =
 
 ### Vite + TypeScript
 
-Vite for fast dev feedback and a minimal SPA setup. TypeScript strict mode for API shapes, hook returns, and conversion results — and to **design** with types (the `RatesState` union is an example: illegal states shouldn't compile).
+Vite for fast dev feedback and a minimal SPA setup. TypeScript strict mode for API shapes, hook return types, and domain guards like `hasAmount`.
 
 ### TanStack React Query
 
 Two GET requests could live in `useEffect` + `useState`. I used React Query because loading, error, retry, and cache are already part of the UI, and it's what I reach for on real API-driven apps.
 
-`useRates` uses `keepPreviousData` and checks `query.data?.base === baseCurrency` before exposing rates, so the UI doesn't flash stale data from the previous currency while a new request is in flight.
+`useRates` uses `keepPreviousData`. **`rates.data?.base !== fromCurrency`** keeps loading visible until rates for the newly selected base arrive.
 
 ### Axios
 
@@ -130,9 +119,9 @@ The currency picker is a native `<select>` (`SelectField`), styled with Tailwind
 
 `useConverter` keeps `amountDraft` (what the user typed) separate from `amount` (parsed via `parseNumber`). The input is `type="text"` with `inputMode="decimal"` because `type="number"` clears in-progress values like `"1."`, which breaks decimal entry. Invalid characters are rejected with a simple pattern before updating state.
 
-### Same-currency guard
+### Currency pair guard
 
-If the user picks the same currency on both sides, `useConverter` auto-swaps the other side to the first available option — avoids a dead-end pair without extra UI.
+Each selector disables the currency already chosen on the other side (`fromOptions` / `toOptions`), so the user can't pick the same code twice.
 
 ### Tailwind CSS v4
 
@@ -154,20 +143,20 @@ These are conscious gaps, not oversights.
 
 **Default currencies** — `fromCurrency` / `toCurrency` default to `"USD"` / `"EUR"` without checking the API response. In production I'd align with backend/product: either the API returns a sorted list with sensible defaults (or a dedicated "popular pairs" field), or the client treats `"USD"` / `"EUR"` as preferences and falls back when the list loads if they're missing. Depends on who owns that contract and how stable the currency set is.
 
-**Tests** — not in this repo yet. `conversion.ts`, `format.ts`, and `hasAmount` are pure and easy to unit-test; `useConverter` has real logic (amount validation, same-currency swap). I'd add Vitest + Testing Library for the main flow.
+**Tests** — not in this repo yet. `conversion.ts`, `format.ts`, and `hasAmount` are pure and easy to unit-test; `useConverter` has real logic (amount validation, disabled options). I'd add Vitest + Testing Library for the main flow.
 
 **Persistence** — state resets on reload. Storing amount + pair in `localStorage` would be a small, useful addition.
 
 **Design questions** — hero title copy (codes + names), whether the inverse rate line matches expectations, and `last updated`: the API returns a date only (`"2026-06-25"`), so showing a time would be misleading without a backend timestamp.
 
-**At scale** — more folders under `features/`, the same discriminated-union pattern for currencies status, centralized React Query keys.
+**At scale** — more folders under `features/`, centralized React Query keys.
 
 ---
 
 ## Where to start reading
 
 1. `src/features/converter/ConverterFeature.tsx`
-2. `src/features/converter/hooks/useConverterController.ts`
+2. `src/features/converter/hooks/useConverter.ts`
 3. `src/features/converter/types.ts`
 4. `src/features/converter/components/ConverterView.tsx`
 

@@ -1,3 +1,5 @@
+import type { SelectOption } from "@/components/SelectField";
+
 export type Currency = {
   name: string;
   symbol: string;
@@ -31,8 +33,24 @@ export function hasAmount(
   return r != null && r.toAmount != null;
 }
 
-export type RatesState =
-  | { status: "idle" }
-  | { status: "loading" }
-  | { status: "error"; onRetry: () => void; isRetrying: boolean }
-  | { status: "ready"; result: ConversionWithAmount };
+export type ConverterForm = {
+  amount: {
+    value: number;
+    draft: string;
+    onChange: (value: string) => void;
+  };
+  from: {
+    value: string;
+    name: string;
+    symbol: string;
+    options: SelectOption[];
+    onChange: (value: string) => void;
+  };
+  to: {
+    value: string;
+    name: string;
+    options: SelectOption[];
+    onChange: (value: string) => void;
+  };
+  swap: () => void;
+};

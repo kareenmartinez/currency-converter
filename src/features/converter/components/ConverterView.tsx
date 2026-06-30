@@ -1,83 +1,24 @@
 import { AmountInput } from "@/components/AmountInput";
 import { FormattedNumber } from "@/components/FormattedNumber";
-import type { SelectOption } from "@/components/SelectField";
 import { SelectField } from "@/components/SelectField";
-import { InlineError } from "@/components/errors/InlineError";
-import { StatusMessage } from "@/components/loading/StatusMessage";
 import { SwapButton } from "@/components/SwapButton";
-import type { RatesState } from "../types";
+import { useConverter } from "@/features/converter/hooks/useConverter";
+import type { CurrenciesResponse } from "../types";
 
 import { ConversionResultView } from "./ConversionResultView";
 
-type FormProps = {
-  amount: number;
-  amountDraft: string;
-  fromCurrency: string;
-  toCurrency: string;
-  fromSymbol: string;
-  fromName: string;
-  toName: string;
-  fromOptions: SelectOption[];
-  toOptions: SelectOption[];
-  onAmountChange: (value: string) => void;
-  setFromCurrency: (value: string) => void;
-  setToCurrency: (value: string) => void;
-  swapCurrencies: () => void;
-};
-
 type Props = {
-  form: FormProps;
-  rates: RatesState;
+  currencyList: CurrenciesResponse;
 };
 
-function renderRatesSection(rates: RatesState, fromAmount: number) {
-  switch (rates.status) {
-    case "error":
-      return (
-        <InlineError
-          title="Unable to load exchange rates"
-          message="We couldn't load exchange rates for this currency. Please try again."
-          onRetry={rates.onRetry}
-          isRetrying={rates.isRetrying}
-        />
-      );
-    case "loading":
-      return <StatusMessage message="Loading exchange rates..." />;
-    case "ready":
-      return (
-        <ConversionResultView result={rates.result} fromAmount={fromAmount} />
-      );
-    case "idle":
-      return <p>No rates available</p>;
-    default: {
-      const _exhaustive: never = rates;
-      return _exhaustive;
-    }
-  }
-}
-
-export function ConverterView({ form, rates }: Props) {
-  const {
-    amount,
-    amountDraft,
-    fromCurrency,
-    toCurrency,
-    fromSymbol,
-    fromName,
-    toName,
-    fromOptions,
-    toOptions,
-    onAmountChange,
-    setFromCurrency,
-    setToCurrency,
-    swapCurrencies,
-  } = form;
+export function ConverterView({ currencyList }: Props) {
+  const form = useConverter(currencyList).form;
 
   return (
     <>
       <h1 className="hero-title mb-8 text-center">
-        <FormattedNumber value={amount} /> {fromCurrency} to {toCurrency} - Convert{" "}
-        {fromName} to {toName}
+        <FormattedNumber value={form.amount.value} /> {form.from.value} to{" "}
+        {form.to.value} - Convert {form.from.name} to {form.to.name}
       </h1>
 
       <div className="rounded-2xl bg-white p-8 shadow-lg max-md:p-6">
@@ -88,31 +29,38 @@ export function ConverterView({ form, rates }: Props) {
           <AmountInput
             id="amount"
             label="Amount"
-            value={amountDraft}
-            prefix={fromSymbol}
-            onChange={onAmountChange}
+            value={form.amount.draft}
+            prefix={form.from.symbol}
+            onChange={form.amount.onChange}
           />
 
           <SelectField
             id="fromCurrency"
             label="From"
-            value={fromCurrency}
-            options={fromOptions}
-            onChange={setFromCurrency}
+            value={form.from.value}
+            options={form.from.options}
+            onChange={form.from.onChange}
           />
 
-          <SwapButton onClick={swapCurrencies} />
+          <SwapButton onClick={form.swap} />
 
           <SelectField
             id="toCurrency"
             label="To"
-            value={toCurrency}
-            options={toOptions}
-            onChange={setToCurrency}
+            value={form.to.value}
+            options={form.to.options}
+            onChange={form.to.onChange}
           />
         </form>
 
-        <div className="rates-section">{renderRatesSection(rates, amount)}</div>
+        <div className="rates-section">
+          <ConversionResultView
+            fromCurrency={form.from.value}
+            toCurrency={form.to.value}
+            amount={form.amount.value}
+            currencyList={currencyList}
+          />
+        </div>
       </div>
     </>
   );

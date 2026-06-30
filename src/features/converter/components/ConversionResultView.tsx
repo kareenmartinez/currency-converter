@@ -1,20 +1,65 @@
 import { FormattedNumber } from "@/components/FormattedNumber";
-import type { ConversionWithAmount } from "../types";
+import { InlineError } from "@/components/errors/InlineError";
+import { StatusMessage } from "@/components/loading/StatusMessage";
+import { buildConversionResult } from "@/features/converter/conversion";
+import { useRates } from "@/features/converter/hooks/useRates";
 import { formatLastUpdated } from "@/utils/format";
 
+import { hasAmount, type CurrenciesResponse, type ConversionWithAmount } from "../types";
+
 type Props = {
-  result: ConversionWithAmount;
-  fromAmount: number;
+  fromCurrency: string;
+  toCurrency: string;
+  amount: number;
+  currencyList: CurrenciesResponse;
 };
 
-export function ConversionResultView({ result, fromAmount }: Props) {
+export function ConversionResultView({
+  fromCurrency,
+  toCurrency,
+  amount,
+  currencyList,
+}: Props) {
+  const rates = useRates(fromCurrency);
+
+  if (rates.isPending || rates.data?.base !== fromCurrency) {
+    return <StatusMessage message="Loading exchange rates..." />;
+  }
+
+  if (rates.isError) {
+    return (
+      <InlineError
+        title="Unable to load exchange rates"
+        message="We couldn't load exchange rates for this currency. Please try again."
+        onRetry={rates.refetch}
+        isRetrying={rates.isRefetching}
+      />
+    );
+  }
+
+  const result = buildConversionResult(
+    amount,
+    fromCurrency,
+    toCurrency,
+    currencyList,
+    rates.data
+  );
+
+  if (!hasAmount(result)) {
+    return null;
+  }
+
+  return <ReadyContent result={result} />;
+}
+
+function ReadyContent({ result }: { result: ConversionWithAmount }) {
   return (
     <>
       <div className="rates-layout">
         <div className="min-w-0 flex-1">
           <div className="space-y-1 max-md:space-y-4">
             <div className="rate-line">
-              <FormattedNumber value={fromAmount} fractionDigits={2} />
+              <FormattedNumber value={result.fromAmount} fractionDigits={2} />
               <span className="shrink-0">{result.fromName} =</span>
             </div>
 

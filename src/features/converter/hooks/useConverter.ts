@@ -1,12 +1,12 @@
 import { useCallback, useMemo, useState } from "react";
 
 import type { SelectOption } from "@/components/SelectField";
-import type { CurrenciesResponse } from "@/features/converter/types";
+import type { CurrenciesResponse, ConverterForm } from "@/features/converter/types";
 import { parseNumber } from "@/utils/format";
 
 const AMOUNT_DRAFT_PATTERN = /^\d*\.?\d*$/;
 
-export function useConverter(currencies: CurrenciesResponse | undefined) {
+export function useConverter(currencies: CurrenciesResponse) {
   const [amountDraft, setAmountDraft] = useState("1");
   const amount = parseNumber(amountDraft);
   const [fromCurrency, setFromCurrencyState] = useState("USD");
@@ -14,12 +14,10 @@ export function useConverter(currencies: CurrenciesResponse | undefined) {
 
   const currencyOptions = useMemo<SelectOption[]>(
     () =>
-      currencies
-        ? Object.entries(currencies).map(([value, currency]) => ({
-            value,
-            label: currency.name,
-          }))
-        : [],
+      Object.entries(currencies).map(([value, currency]) => ({
+        value,
+        label: currency.name,
+      })),
     [currencies]
   );
 
@@ -42,24 +40,18 @@ export function useConverter(currencies: CurrenciesResponse | undefined) {
   );
 
   const fromSymbol = useMemo(
-    () => currencies?.[fromCurrency]?.currency_symbol ?? fromCurrency,
+    () => currencies[fromCurrency]?.currency_symbol ?? fromCurrency,
     [currencies, fromCurrency]
   );
 
   const fromName = useMemo(
-    () => currencies?.[fromCurrency]?.name ?? fromCurrency,
+    () => currencies[fromCurrency]?.name ?? fromCurrency,
     [currencies, fromCurrency]
   );
 
   const toName = useMemo(
-    () => currencies?.[toCurrency]?.name ?? toCurrency,
+    () => currencies[toCurrency]?.name ?? toCurrency,
     [currencies, toCurrency]
-  );
-
-  const pickOtherCurrency = useCallback(
-    (code: string) =>
-      currencyOptions.find((option) => option.value !== code)?.value,
-    [currencyOptions]
   );
 
   const onAmountChange = useCallback((value: string) => {
@@ -67,48 +59,32 @@ export function useConverter(currencies: CurrenciesResponse | undefined) {
     setAmountDraft(value);
   }, []);
 
-  const setFromCurrency = useCallback(
-    (code: string) => {
-      setFromCurrencyState(code);
-
-      if (code === toCurrency) {
-        const fallback = pickOtherCurrency(code);
-        if (fallback) setToCurrencyState(fallback);
-      }
-    },
-    [toCurrency, pickOtherCurrency]
-  );
-
-  const setToCurrency = useCallback(
-    (code: string) => {
-      setToCurrencyState(code);
-
-      if (code === fromCurrency) {
-        const fallback = pickOtherCurrency(code);
-        if (fallback) setFromCurrencyState(fallback);
-      }
-    },
-    [fromCurrency, pickOtherCurrency]
-  );
-
   const swapCurrencies = useCallback(() => {
     setFromCurrencyState(toCurrency);
     setToCurrencyState(fromCurrency);
   }, [fromCurrency, toCurrency]);
 
-  return {
-    amount,
-    amountDraft,
-    fromCurrency,
-    toCurrency,
-    fromSymbol,
-    fromName,
-    toName,
-    fromOptions,
-    toOptions,
-    onAmountChange,
-    setFromCurrency,
-    setToCurrency,
-    swapCurrencies,
+  const form: ConverterForm = {
+    amount: {
+      value: amount,
+      draft: amountDraft,
+      onChange: onAmountChange,
+    },
+    from: {
+      value: fromCurrency,
+      name: fromName,
+      symbol: fromSymbol,
+      options: fromOptions,
+      onChange: setFromCurrencyState,
+    },
+    to: {
+      value: toCurrency,
+      name: toName,
+      options: toOptions,
+      onChange: setToCurrencyState,
+    },
+    swap: swapCurrencies,
   };
+
+  return { form };
 }
