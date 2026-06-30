@@ -49,20 +49,57 @@
     @apply flex max-w-full overflow-x-auto;
   }
 
+  .select-field-control {
+    @apply relative;
+  }
+
   .select-trigger {
-    @apply w-full cursor-pointer py-3.5 pl-4 pr-10 text-left outline-none;
+    @apply w-full cursor-pointer appearance-none py-3.5 pl-4 pr-10 text-left outline-none;
   }
 
-  .select-option {
-    @apply w-full cursor-pointer px-4 py-2.5 text-left text-base text-gray-900 hover:bg-brand-soft;
+  .select-chevron {
+    @apply pointer-events-none absolute right-3 top-1/2 -translate-y-1/2 transition-transform duration-200;
   }
 
-  .select-option[data-selected] {
-    @apply bg-brand-soft font-semibold hover:bg-brand-soft;
-  }
+  @supports (appearance: base-select) {
+    .select-trigger,
+    .select-trigger::picker(select) {
+      appearance: base-select;
+    }
 
-  .select-option[data-disabled] {
-    @apply cursor-not-allowed text-gray-400 hover:bg-transparent;
+    .select-trigger::picker-icon,
+    .select-trigger::checkmark {
+      display: none;
+    }
+
+    .select-field-control:has(.select-trigger:open) .select-chevron {
+      @apply rotate-180;
+    }
+
+    .select-trigger::picker(select) {
+      @apply mt-1 max-h-60 overflow-y-auto overscroll-contain rounded-lg border border-gray-300 bg-white py-1 shadow-lg;
+    }
+
+    .select-trigger option {
+      @apply cursor-pointer px-4 py-2.5 text-base text-gray-900;
+    }
+
+    .select-trigger option:hover,
+    .select-trigger option:focus {
+      @apply bg-brand-soft;
+    }
+
+    .select-trigger option:checked {
+      @apply bg-brand-soft font-semibold;
+    }
+
+    .select-trigger option:disabled {
+      @apply cursor-not-allowed text-gray-400;
+    }
+
+    .select-trigger option:disabled:hover {
+      @apply bg-transparent;
+    }
   }
 
   .btn-primary {
